@@ -1,5 +1,7 @@
 apply plugin: 'groovy'
 //apply plugin: 'maven'
+apply plugin:'maven-publish'
+//apply plugin:'maven'
 
 dependencies {
     implementation gradleApi()
@@ -37,6 +39,23 @@ version=VERSION
 //        }
 //    }
 //}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId 'com.folderv.plugin'
+            artifactId "fog"
+            version "1.0.0"
+
+            from components.java
+            // more goes in here
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
+}
 
 //apply from: '../bintray_java.gradle'
 //apply from: '../nexus_java.gradle'
