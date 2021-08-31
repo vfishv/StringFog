@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.utils;
+package com.github.megatronking.stringfog.plugin;
 import java.io.File;
 public class FileUtils {
 
@@ -50,15 +50,17 @@ public class FileUtils {
     }
 
 
-    public static boolean makeDirs(String filePath) {
+    public static boolean makedirs(String filePath) {
         String folderName = getFolderName(filePath);
         if (isEmpty(folderName)) {
             return false;
         }
 
         File folder = new File(folderName);
-        return (folder.exists() && folder.isDirectory()) || folder
-                .mkdirs();
+        if (folder.exists() && folder.isDirectory()) {
+            return true;
+        }
+        return folder.mkdirs();
     }
 
     public static boolean isEmpty(String str) {
