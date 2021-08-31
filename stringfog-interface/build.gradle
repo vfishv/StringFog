@@ -1,5 +1,6 @@
 apply plugin: 'java'
 //apply plugin: 'maven'
+apply plugin:'maven-publish'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -21,6 +22,23 @@ version=VERSION
 //        }
 //    }
 //}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId 'com.github.megatronking.stringfog'
+            artifactId "stringfog-interface"
+            version "1.1.0"
+
+            from components.java
+            // more goes in here
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
+}
 
 //apply from: '../bintray_java.gradle'
 //apply from: '../nexus_java.gradle'
