@@ -49,14 +49,14 @@ public class FileUtils {
         return (filePosi == -1) ? "" : filePath.substring(0, filePosi);
     }
 
-    public static boolean makedirs(File folder) {
+    public static boolean mkdirs(File folder) {
         if (folder.exists() && folder.isDirectory()) {
             return true;
         }
         return folder.mkdirs();
     }
 
-    public static boolean makedirs(String filePath) {
+    public static boolean mkdirs(String filePath) {
         String folderName = getFolderName(filePath);
         if (isEmpty(folderName)) {
             return false;
