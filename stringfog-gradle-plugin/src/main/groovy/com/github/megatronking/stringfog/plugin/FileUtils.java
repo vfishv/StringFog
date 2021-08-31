@@ -49,6 +49,12 @@ public class FileUtils {
         return (filePosi == -1) ? "" : filePath.substring(0, filePosi);
     }
 
+    public static boolean makedirs(File folder) {
+        if (folder.exists() && folder.isDirectory()) {
+            return true;
+        }
+        return folder.mkdirs();
+    }
 
     public static boolean makedirs(String filePath) {
         String folderName = getFolderName(filePath);
