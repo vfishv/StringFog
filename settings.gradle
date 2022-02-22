@@ -4,3 +4,4 @@ file('stringfog-ext').listFiles().each {
         include ":stringfog-ext:${it.name}"
     }
 }
+include ':Test'
