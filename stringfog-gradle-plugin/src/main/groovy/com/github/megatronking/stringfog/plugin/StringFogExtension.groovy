@@ -12,15 +12,19 @@
  * the License.
  */
 
-package com.github.megatronking.stringfog.plugin;
+package com.github.megatronking.stringfog.plugin
+
+import com.github.megatronking.stringfog.IKeyGenerator
+import com.github.megatronking.stringfog.plugin.kg.RandomKeyGenerator;
 
 /**
  * StringFog extension.
  * <p>
  * <code>
+ * apply plugin: 'stringfog'
+ *
  * stringfog {
- *     key 'Hello World'
- *     enable true
+ *     implementation = "com.github.megatronking.stringfog.xor.StringFogImpl"
  * }
  * </code>
  *
@@ -30,10 +34,41 @@ package com.github.megatronking.stringfog.plugin;
 
 public class StringFogExtension {
 
-    String key
-    boolean enable = true
-    boolean debug = false
-    String[] fogPackages = []
+    /**
+     * The algorithm implementation for String encryption and decryption.
+     * It is required.
+     */
     String implementation
+
+    /**
+     * Deprecated. Use the follow api instead:
+     * <code>
+     * kg = HardCodeKeyGenerator("This is a String key")
+     * </code>.
+     */
+    @Deprecated
+    String key
+
+    /**
+     * A generator to generate a security key for the encryption and decryption.
+     *
+     * StringFog use a 8 length random key generator default.
+     */
+    IKeyGenerator kg = new RandomKeyGenerator()
+
+    /**
+     * Enable or disable the StringFog plugin. Default is enabled.
+     */
+    boolean enable = true
+
+    /**
+     * Enable or disable the StringFog debug message print. Default is disabled.
+     */
+    boolean debug = false
+
+    /**
+     * The java packages will be applied. Default is effect on all packages.
+     */
+    String[] fogPackages = []
 
 }

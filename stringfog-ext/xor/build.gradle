@@ -1,6 +1,5 @@
 apply plugin: 'java-library'
-//apply plugin: 'maven'
-apply plugin:'maven-publish'
+apply plugin: 'maven'
 
 dependencies {
     api project(':stringfog-interface')
@@ -15,28 +14,11 @@ version=VERSION
 
 [compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
 
-//uploadArchives {
-//    repositories {
-//        mavenDeployer {
-//            repository(url: uri("$rootDir/maven"))
-//        }
-//    }
-//}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId 'com.folderv.plugin'
-            artifactId "xor"
-            version "1.0.0"
-
-            from components.java
-            // more goes in here
-        }
-    }
-
+uploadArchives {
     repositories {
-        mavenLocal()
+        mavenDeployer {
+            repository(url: uri("$rootDir/maven"))
+        }
     }
 }
 

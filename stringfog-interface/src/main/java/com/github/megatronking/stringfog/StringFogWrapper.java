@@ -22,7 +22,7 @@ package com.github.megatronking.stringfog;
  */
 public final class StringFogWrapper implements IStringFog {
 
-    private IStringFog mStringFogImpl;
+    private final IStringFog mStringFogImpl;
 
     public StringFogWrapper(String impl) {
         try {
@@ -39,18 +39,18 @@ public final class StringFogWrapper implements IStringFog {
     }
 
     @Override
-    public String encrypt(String data, String key) {
-        return mStringFogImpl == null ? data : mStringFogImpl.encrypt(data, key);
+    public byte[] encrypt(String data, byte[] key) {
+        return mStringFogImpl == null ? data.getBytes() : mStringFogImpl.encrypt(data, key);
     }
 
     @Override
-    public String decrypt(String data, String key) {
-        return mStringFogImpl == null ? data : mStringFogImpl.decrypt(data, key);
+    public String decrypt(byte[] data, byte[] key) {
+        return mStringFogImpl == null ? new String(data) : mStringFogImpl.decrypt(data, key);
     }
 
     @Override
-    public boolean overflow(String data, String key) {
-        return mStringFogImpl != null && mStringFogImpl.overflow(data, key);
+    public boolean shouldFog(String data) {
+        return mStringFogImpl != null && mStringFogImpl.shouldFog(data);
     }
 
 }

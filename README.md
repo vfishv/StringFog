@@ -20,19 +20,21 @@ String a = "This is a string!";
 
 - 加密后：
 ```
-String a = StringFog.decrypt("ABCDEFGHIJKLMN");
+String a = StringFog.decrypt(new byte[]{-113, 71...}, new byte[]{-23, 53});
+
 ```
 
 - 运行时：
 ```
-decrypt: "ABCDEFGHIJKLMN" => "This is a string!"
+decrypt: new byte[]{-113, 71...} => "This is a string!"
 ```
 
 ### 混淆
 StringFog和混淆完全不冲突，也不需要配置反混淆，实际上StringFog配上混淆效果会更好！
 
 ### 使用
-由于开发了gradle插件，所以在集成时非常简单，不会影响到打包的配置。插件已经上传到jcenter，直接引用依赖就可以。
+由于开发了gradle插件，所以在集成时非常简单，不会影响到打包的配置。插件已经上传到MavenCentral，直接引用依赖就可以。
+**jcenter已经废弃，3.0+版本取消发布**
 
 ##### 1、在根目录build.gradle中引入插件依赖。
 ```
@@ -42,9 +44,9 @@ buildscript {
     }
     dependencies {
         ...
-        classpath 'com.github.megatronking.stringfog:gradle-plugin:2.2.1'
-        // 选用加解密算法库，默认实现了xor和aes-cbc两种简单算法，也可以使用自己的加解密库。
-        classpath 'com.github.megatronking.stringfog:xor:1.1.0'
+        classpath 'com.github.megatronking.stringfog:gradle-plugin:3.0.0'
+        // 选用加解密算法库，默认实现了xor算法，也可以使用自己的加解密库。
+        classpath 'com.github.megatronking.stringfog:xor:3.0.0'
     }
 }
 ```
@@ -54,14 +56,17 @@ buildscript {
 apply plugin: 'stringfog'
 
 stringfog {
-    // 这是加解密key，可以自由定义。
-    key 'Hello World'
-    // 开关
-    enable true
-    // 加解密库的实现类路径，需和上面配置的加解密算法库一致。
+    // 必要：加解密库的实现类路径，需和上面配置的加解密算法库一致。
     implementation 'com.github.megatronking.stringfog.xor.StringFogImpl'
-    // 指定需加密的代码包路径，可配置多个，未指定将默认全部加密。
+    // 可选：加密开关，默认开启。
+    enable true
+    // 可选：指定需加密的代码包路径，可配置多个，未指定将默认全部加密。
     fogPackages = ['com.xxx.xxx']
+    // 可选：指定密钥生成器，默认使用长度2的随机密钥（每个字符串均有随机密钥）,
+    //      也可以指定一个固定的密钥：HardCodeKeyGenerator("This is a key")
+    kg new RandomKeyGenerator()
+    // 可选：调试信息打印开关，默认关闭。
+    debug true
 }
 ```
 
@@ -70,7 +75,7 @@ stringfog {
 dependencies {
       ...
       // 这里要和上面选用的加解密算法库一致，用于运行时解密。
-      compile 'com.github.megatronking.stringfog:xor:1.1.0'
+      compile 'com.github.megatronking.stringfog:xor:3.0.0'
 }
 ```
 
@@ -85,29 +90,34 @@ public class Test {
 }
 ```
 #### 自定义加解密算法实现
-实现IStringFog接口，参考stringfog-ext目录下面的两种算法实现。注意某些算法在不同平台上会有差异，可能出现在运行时无法正确解密的问题。如何集成请参考下方范例！
+实现IStringFog接口，参考stringfog-ext目录下面的xor算法实现。
+注意某些算法在不同平台上会有差异，可能出现在运行时无法正确解密的问题。如何集成请参考下方范例！
 ```
 public final class StringFogImpl implements IStringFog {
 
     @Override
-    public String encrypt(String data, String key) {
+    public byte[] encrypt(String data, byte[] key) {
         // 自定义加密
     }
 
     @Override
-    public String decrypt(String data, String key) {
+    public String decrypt(byte[] data, byte[] key) {
         // 自定义解密
     }
 
     @Override
-    public boolean overflow(String data, String key) {
-        // 最大字符串长度为65536，这里要校验加密后是否出现长度溢出，如果溢出将不进行加密。
-        // 这里可以控制符合某些条件的字符串不加密。
+    public boolean shouldFog(String data) {
+        // 控制指定字符串是否加密
+        // 建议过滤掉不重要或者过长的字符串
+        return true;
     }
 
 }
 
 ```
+
+#### 自定义密钥生成器
+实现IKeyGenerator接口，参考RandomKeyGenerator的实现。
 
 #### Mapping文件
 加解密的字符串明文和暗文会自动生成mapping映射文件，位于outputs/mapping/stringfog.txt。
@@ -117,6 +127,14 @@ public final class StringFogImpl implements IStringFog {
 - 自定义加解密算法集成，参考[sample2](https://github.com/MegatronKing/StringFog-Sample2)
 
 ## 更新日志
+
+### v3.0.0
+- 密文不再以String形式存在，改为直接字节数组，感谢PR #50。
+- 重构公开API相关代码（不兼容历史版本）。
+- 删除AES加密实现，考虑到存在bug和性能问题且意义不大。
+- xor算法移除base64编码。
+- 固定加密字符串key改为随机key，且提供IKeyGenerator接口支持自定义实现。
+- 插件依赖的ASM库由5.x升级到9.2。
 
 ### v2.2.1
 - 修复module-info类导致的报错问题
@@ -162,7 +180,7 @@ public final class StringFogImpl implements IStringFog {
 
 --------
 
-    Copyright (C) 2017, Megatron King
+    Copyright (C) 2022, Megatron King
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

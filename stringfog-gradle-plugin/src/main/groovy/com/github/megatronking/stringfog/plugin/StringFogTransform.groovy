@@ -16,6 +16,8 @@ package com.github.megatronking.stringfog.plugin
 
 import com.android.build.api.transform.*
 import com.android.build.gradle.api.BaseVariant
+import com.android.utils.FileUtils
+import com.github.megatronking.stringfog.IKeyGenerator
 import com.github.megatronking.stringfog.plugin.utils.MD5
 import com.google.common.collect.ImmutableSet
 import com.google.common.io.Files
@@ -33,16 +35,15 @@ abstract class StringFogTransform extends Transform {
     protected StringFogClassInjector mInjector
     protected StringFogMappingPrinter mMappingPrinter
 
-    protected String mKey
     protected String mImplementation
 
     StringFogTransform(Project project, DomainObjectSet<BaseVariant> variants) {
         project.afterEvaluate {
-            String key = project.stringfog.key
+            IKeyGenerator kg = project.stringfog.kg
             String[] fogPackages = project.stringfog.fogPackages
             String implementation = project.stringfog.implementation
-            if (key == null || key.length() == 0) {
-                throw new IllegalArgumentException("Missing stringfog key config")
+            if (kg == null) {
+                throw new IllegalArgumentException("Missing stringfog kg config")
             }
             if (implementation == null || implementation.length() == 0) {
                 throw new IllegalArgumentException("Missing stringfog implementation config")
@@ -60,17 +61,16 @@ abstract class StringFogTransform extends Transform {
                         }
                     }
                 }
-                createFogClass(project, fogPackages, key, implementation, variants, applicationId)
+                createFogClass(project, fogPackages, kg, implementation, variants, applicationId)
             } else {
                 mMappingPrinter = null
                 mInjector = null
             }
-            mKey = key
             mImplementation = implementation
         }
     }
 
-    void createFogClass(def project, String[] fogPackages, String key, String implementation,
+    void createFogClass(def project, String[] fogPackages, IKeyGenerator kg, String implementation,
                         DomainObjectSet<BaseVariant> variants, def applicationId) {
         variants.all { variant ->
             def variantName = variant.name.toUpperCase()[0] + variant.name.substring(1, variant.name.length() - 1)
@@ -87,12 +87,12 @@ abstract class StringFogTransform extends Transform {
                     mMappingPrinter = new StringFogMappingPrinter(
                             new File(project.buildDir, "outputs/mapping/${variant.name.toLowerCase()}/stringfog.txt"))
                     // Create class injector
-                    mInjector = new StringFogClassInjector(fogPackages, key, implementation,
+                    mInjector = new StringFogClassInjector(fogPackages, kg, implementation,
                             applicationId + "." + FOG_CLASS_NAME, mMappingPrinter)
 
                     // Generate StringFog.java
                     StringFogClassGenerator.generate(stringfogFile, applicationId, FOG_CLASS_NAME,
-                            key, implementation)
+                            kg, implementation)
                 }
             }
         }
@@ -138,8 +138,7 @@ abstract class StringFogTransform extends Transform {
         }
 
         if (mMappingPrinter != null) {
-            mMappingPrinter.startMappingOutput()
-            mMappingPrinter.ouputInfo(mKey, mImplementation)
+            mMappingPrinter.startMappingOutput(mImplementation)
         }
 
         if (!dirInputs.isEmpty() || !jarInputs.isEmpty()) {
@@ -229,7 +228,7 @@ abstract class StringFogTransform extends Transform {
         }
     }
 
-    String getUniqueHashName(File fileInput) {
+    static String getUniqueHashName(File fileInput) {
         final String fileInputName = fileInput.getName()
         if (fileInput.isDirectory()) {
             return fileInputName

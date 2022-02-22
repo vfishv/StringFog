@@ -14,6 +14,7 @@
 
 package com.github.megatronking.stringfog.plugin;
 
+import com.github.megatronking.stringfog.IKeyGenerator;
 import com.google.common.collect.ImmutableSet;
 import com.squareup.javawriter.JavaWriter;
 
@@ -31,8 +32,9 @@ import javax.lang.model.element.Modifier;
  */
 public final class StringFogClassGenerator {
 
-    public static void generate(File outputFile, String packageName, String className, String key,
-                                String implementation) throws IOException {
+
+    public static void generate(File outputFile, String packageName, String className,
+                                IKeyGenerator kg, String implementation) throws IOException {
         File outputDir = outputFile.getParentFile();
         if (!outputDir.exists() && !outputDir.mkdirs()) {
             throw new IOException("Can not mkdirs the dir: " + outputDir);
@@ -57,24 +59,11 @@ public final class StringFogClassGenerator {
                 "new " + implementationSimpleClassName + "()");
 
         javaWriter.emitEmptyLine();
-        javaWriter.beginMethod(String.class.getSimpleName(), "encrypt",
-                ImmutableSet.of(Modifier.PUBLIC, Modifier.STATIC),
-                String.class.getSimpleName(), "value");
-        javaWriter.emitStatement("return " + "IMPL.encrypt(value, \"" + key + "\")");
-        javaWriter.endMethod();
-
-        javaWriter.emitEmptyLine();
         javaWriter.beginMethod(String.class.getSimpleName(), "decrypt",
                 ImmutableSet.of(Modifier.PUBLIC, Modifier.STATIC),
-                String.class.getSimpleName(), "value");
-        javaWriter.emitStatement("return " + "IMPL.decrypt(value, \"" + key + "\")");
-        javaWriter.endMethod();
-
-        javaWriter.emitEmptyLine();
-        javaWriter.beginMethod(boolean.class.getSimpleName(), "overflow",
-                ImmutableSet.of(Modifier.PUBLIC, Modifier.STATIC),
-                String.class.getSimpleName(), "value");
-        javaWriter.emitStatement("return " + "IMPL.overflow(value, \"" + key + "\")");
+                byte[].class.getSimpleName(), "value",
+                byte[].class.getSimpleName(), "key");
+        javaWriter.emitStatement("return " + "IMPL.decrypt(value, key)");
         javaWriter.endMethod();
 
         javaWriter.emitEmptyLine();
@@ -82,5 +71,4 @@ public final class StringFogClassGenerator {
 
         javaWriter.close();
     }
-
 }
