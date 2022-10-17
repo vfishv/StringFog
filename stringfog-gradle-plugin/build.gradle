@@ -1,3 +1,4 @@
+apply plugin: 'java-library'
 apply plugin: 'groovy'
 apply plugin: 'maven-publish'
 //apply plugin: "com.vanniktech.maven.publish"
@@ -5,9 +6,9 @@ apply plugin: 'maven-publish'
 dependencies {
     implementation gradleApi()
     implementation localGroovy()
-    implementation 'com.android.tools.build:gradle:3.3.0'
+    implementation 'com.android.tools.build:gradle:3.6.1'
     implementation 'org.ow2.asm:asm:9.2'
-    implementation 'com.squareup:javapoet:1.9.0'
+    implementation 'com.squareup:javapoet:1.10.0'
     implementation project(':stringfog-interface')
 }
 
@@ -23,19 +24,17 @@ sourceSets {
     }
 }
 
-group=GROUP
-archivesBaseName=ARTIFACTID
-version=VERSION
-
-[compileJava, compileGroovy, javadoc]*.options*.encoding = 'UTF-8'
-
-publishing {
-    repositories {
-        maven {
-            url = uri('../maven')
-        }
-    }
+tasks.withType(ProcessResources){
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+tasks.withType(Jar){
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-//apply from: '../bintray_java.gradle'
-//apply from: '../nexus_java.gradle'
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+
+apply from: '../maven_local.gradle'
+
+// The following is used for mavenCentral publish.
+// apply from: '../maven_nexus.gradle'

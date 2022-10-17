@@ -6,12 +6,10 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 }
 
-targetCompatibility = '1.7'
-sourceCompatibility = '1.7'
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
 
-group=GROUP
-archivesBaseName=ARTIFACTID
-version=VERSION
+apply from: '../maven_local.gradle'
 
 [compileJava, compileTestJava, javadoc]*.options*.encoding = 'UTF-8'
 
@@ -75,3 +73,5 @@ publishing {
 
 //apply from: '../bintray_java.gradle'
 //apply from: '../nexus_java.gradle'
+// The following is used for mavenCentral publish.
+// apply from: '../maven_nexus.gradle'
