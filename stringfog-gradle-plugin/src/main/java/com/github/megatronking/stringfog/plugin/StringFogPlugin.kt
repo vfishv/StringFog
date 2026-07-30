@@ -3,15 +3,10 @@ package com.github.megatronking.stringfog.plugin
 import com.android.build.api.instrumentation.FramesComputationMode
 import com.android.build.api.instrumentation.InstrumentationScope
 import com.android.build.api.variant.AndroidComponentsExtension
-import com.android.build.gradle.AppExtension
-import com.android.build.gradle.BaseExtension
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.variant.ApplicationVariant
 import groovy.xml.XmlParser
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.internal.extensions.stdlib.capitalized
-import java.io.File
 import java.io.FileInputStream
 import java.io.InputStreamReader
 
@@ -21,27 +16,15 @@ class StringFogPlugin : Plugin<Project> {
         private const val PLUGIN_NAME = "stringfog"
     }
 
-    private fun forEachVariant(
-        extension: BaseExtension,
-        action: (com.android.build.gradle.api.BaseVariant) -> Unit
-    ) {
-        when (extension) {
-            is AppExtension -> extension.applicationVariants.all(action)
-            is LibraryExtension -> {
-                extension.libraryVariants.all(action)
-            } else -> throw GradleException(
-                "StringFog plugin must be used with android app," +
-                        "library or feature plugin"
-            )
-        }
-    }
-
     override fun apply(project: Project) {
         project.extensions.create(PLUGIN_NAME, StringFogExtension::class.java)
-        val extension = project.extensions.findByType(BaseExtension::class.java)
-            ?: throw GradleException("StringFog plugin must be used with android plugin")
 
+        // AGP 9.x removed the old DSL implementation types (BaseExtension / AppExtension /
+        // LibraryExtension, applicationVariants / libraryVariants, registerJavaGeneratingTask).
+        // Everything below now goes exclusively through the public AndroidComponentsExtension /
+        // Variant API so the plugin keeps working on AGP 9.x + Gradle 9.x.
         val androidComponents = project.extensions.getByType(AndroidComponentsExtension::class.java)
+
         androidComponents.onVariants { variant ->
             // Check stringfog extension
             val stringfog = project.extensions.getByType(StringFogExtension::class.java)
@@ -51,21 +34,22 @@ class StringFogPlugin : Plugin<Project> {
             if (!stringfog.enable) {
                 return@onVariants
             }
-            var applicationId: String? = null
+
             // We must get the package name to generate <package name>.StringFog.java
-            // Priority: AndroidManifest -> namespace -> stringfog.packageName
+            // Priority: AndroidManifest -> variant applicationId/namespace -> stringfog.packageName
+            var applicationId: String? = null
             val manifestFile = project.file("src/main/AndroidManifest.xml")
             if (manifestFile.exists()) {
                 val parsedManifest = XmlParser().parse(
                     InputStreamReader(FileInputStream(manifestFile), "utf-8")
                 )
-                if (!manifestFile.exists()) {
-                    throw IllegalArgumentException("Failed to parse file $manifestFile")
-                }
                 applicationId = parsedManifest.attribute("package")?.toString()
             }
             if (applicationId.isNullOrEmpty()) {
-                applicationId = extension.namespace
+                // ApplicationVariant exposes the real applicationId; other variant types
+                // (library, etc.) only expose namespace.
+                applicationId = (variant as? ApplicationVariant)?.applicationId?.orNull
+                    ?: variant.namespace.orNull
             }
             if (applicationId.isNullOrEmpty()) {
                 applicationId = stringfog.packageName
@@ -90,25 +74,23 @@ class StringFogPlugin : Plugin<Project> {
                 FramesComputationMode.COMPUTE_FRAMES_FOR_INSTRUMENTED_METHODS
             )
 
-            // TODO This will not work on Gradle 9.0
-            forEachVariant(extension) {
-                val generateTaskName = "generateStringFog${it.name.capitalized()}"
-                if (project.getTasksByName(generateTaskName, true).isNotEmpty()) {
-                    return@forEachVariant
-                }
-                val stringfogDir = File(project.buildDir, "generated" +
-                        File.separatorChar + "source" + File.separatorChar + "stringFog" + File.separatorChar + it.name.capitalized().lowercase())
-                val provider = project.tasks.register(generateTaskName, SourceGeneratingTask::class.java) { task ->
-                    task.genDir.set(stringfogDir)
-                    task.applicationId.set(applicationId)
-                    task.implementation.set(stringfog.implementation)
-                    task.mode.set(stringfog.mode)
-                }
-                it.registerJavaGeneratingTask(provider, stringfogDir)
+            // Register one generating task per variant (variant.name is already unique per
+            // variant, so there's no cross-variant collision to guard against here) and wire
+            // its output directory through the new Sources API instead of
+            // BaseVariant.registerJavaGeneratingTask. AGP now manages/allocates the generated
+            // source directory itself, so we no longer need to build the path from
+            // project.buildDir by hand.
+            val generateTaskName = "generateStringFog${variant.name.replaceFirstChar { it.uppercase() }}"
+            val provider = project.tasks.register(generateTaskName, SourceGeneratingTask::class.java) { task ->
+                task.applicationId.set(applicationId)
+                task.implementation.set(stringfog.implementation)
+                task.mode.set(stringfog.mode)
             }
+            variant.sources.java?.addGeneratedSourceDirectory(provider, SourceGeneratingTask::genDir)
+
             // TODO Need a final task to write logs to file
-//            val printFile = File(project.buildDir, "outputs/mapping/${variant.name.lowercase()}/stringfog.txt")
-//            printFile.writeText(logs.joinToString("\n"))
+//            val printFile = project.layout.buildDirectory.file("outputs/mapping/${variant.name.lowercase()}/stringfog.txt")
+//            printFile.get().asFile.writeText(logs.joinToString("\n"))
         }
     }
 
