@@ -1,12 +1,12 @@
 plugins {
     id "java-library"
-    id "org.jetbrains.kotlin.jvm" version "2.3.21"
+    //id "org.jetbrains.kotlin.jvm" version "2.3.21"
 }
 
 dependencies {
     implementation gradleApi()
     implementation localGroovy()
-    implementation 'com.android.tools.build:gradle:8.13.2'
+    implementation 'com.android.tools.build:gradle:9.3.1'
     implementation project(':stringfog-core')
     implementation project(':stringfog-interface')
 }
@@ -28,7 +28,7 @@ tasks.withType(ProcessResources){
 tasks.withType(Jar){
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
-
+/*
 sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
 
@@ -37,7 +37,7 @@ tasks {
         kotlinOptions.jvmTarget = targetCompatibility
     }
 }
-
+*/
 apply from: '../maven_local.gradle'
 
 // The following is used for mavenCentral publish.

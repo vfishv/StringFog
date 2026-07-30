@@ -4,14 +4,14 @@ plugins {
 
 android {
     namespace "com.github.megatronking.stringfog"
-    compileSdk 34
+    compileSdk 37
     buildFeatures {
         buildConfig = true
     }
     defaultConfig {
         applicationId "com.github.megatronking.stringfog"
         minSdk 15
-        targetSdk 36
+        targetSdk 37
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -19,7 +19,7 @@ android {
     buildTypes {
         debug {
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
