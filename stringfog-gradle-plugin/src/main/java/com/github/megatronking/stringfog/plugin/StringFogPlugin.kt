@@ -10,7 +10,7 @@ import groovy.xml.XmlParser
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.configurationcache.extensions.capitalized
+import org.gradle.internal.extensions.stdlib.capitalized
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStreamReader
