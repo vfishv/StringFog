@@ -1,12 +1,12 @@
 plugins {
     id "java-library"
-    id "org.jetbrains.kotlin.jvm" version "1.8.21"
+    id "org.jetbrains.kotlin.jvm" version "2.3.21"
 }
 
 dependencies {
     implementation gradleApi()
     implementation localGroovy()
-    implementation 'com.android.tools.build:gradle:8.0.0'
+    implementation 'com.android.tools.build:gradle:8.13.2'
     implementation project(':stringfog-core')
     implementation project(':stringfog-interface')
 }
