@@ -10,23 +10,27 @@
 - 完全Gradle自动化集成。
 - 不支持InstantRun。
 
+**一些提示**
+> 由于我目前主要精力在[Reqable](https://reqable.com)创业项目上，StringFog的Issue处理没那么及时，非常抱歉！
+虽然我已经很久不从事Android项目的开发，但是还是会尽力将StringFog一直维护下去，如果您发现了一些可以修复的问题，欢迎提交PR。
+
 ### 原理
 
 ![](https://github.com/MegatronKing/StringFog/blob/master/assets/flow.png)<br>
 
 - 加密前：
-```
+```java
 String a = "This is a string!";
 ```
 
 - 加密后：
-```
+```java
 String a = StringFog.decrypt(new byte[]{-113, 71...}, new byte[]{-23, 53});
 
 ```
 
 - 运行时：
-```
+```java
 decrypt: new byte[]{-113, 71...} => "This is a string!"
 ```
 
@@ -38,30 +42,33 @@ StringFog和混淆完全不冲突，也不需要配置反混淆，实际上Strin
 **jcenter已经废弃，3.0+版本取消发布**
 
 ##### 1、在根目录build.gradle中引入插件依赖。
-```
+```groovy
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
     }
     dependencies {
         ...
-        classpath 'com.github.megatronking.stringfog:gradle-plugin:4.0.0'
+        classpath 'com.github.megatronking.stringfog:gradle-plugin:5.2.0'
         // 选用加解密算法库，默认实现了xor算法，也可以使用自己的加解密库。
-        classpath 'com.github.megatronking.stringfog:xor:4.0.0'
+        classpath 'com.github.megatronking.stringfog:xor:5.0.0'
     }
 }
 ```
 
 ##### 2、在app或lib的build.gradle中配置插件。
-```
+```groovy
 apply plugin: 'stringfog'
 
-// 导入RandomKeyGenerator类，如果不使用RandomKeyGenerator，可以删除此行
+// 导入RandomKeyGenerator类，如果使用HardCodeKeyGenerator，更换下类名
 import com.github.megatronking.stringfog.plugin.kg.RandomKeyGenerator
+import com.github.megatronking.stringfog.plugin.StringFogMode
 
 stringfog {
     // 必要：加解密库的实现类路径，需和上面配置的加解密算法库一致。
     implementation 'com.github.megatronking.stringfog.xor.StringFogImpl'
+    // 可选：StringFog会自动尝试获取packageName，如果遇到获取失败的情况，可以显式地指定。
+    packageName 'com.github.megatronking.stringfog.app'
     // 可选：加密开关，默认开启。
     enable true
     // 可选：指定需加密的代码包路径，可配置多个，未指定将默认全部加密。
@@ -71,16 +78,50 @@ stringfog {
     kg new RandomKeyGenerator()
     // 可选（4.0版本新增）：用于控制字符串加密后在字节码中的存在形式, 默认为base64，
     // 也可以使用text或者bytes
-    mode base64
+    mode StringFogMode.base64
+}
+```
+
+kts中配置参考
+```kotlin
+plugins {
+    //...lib or application
+    id("stringfog")
+}
+apply(plugin = "stringfog")
+
+configure<StringFogExtension> {
+    // 必要：加解密库的实现类路径，需和上面配置的加解密算法库一致。
+    implementation = "com.github.megatronking.stringfog.xor.StringFogImpl"
+    // 可选：加密开关，默认开启。
+    enable = true
+    // 可选：指定需加密的代码包路径，可配置多个，未指定将默认全部加密。
+    // fogPackages = arrayOf("com.xxx.xxx")
+    kg = com.github.megatronking.stringfog.plugin.kg.RandomKeyGenerator()
+    // base64或者bytes
+    mode = com.github.megatronking.stringfog.plugin.StringFogMode.bytes
 }
 ```
 
 ##### 3、在app或lib的build.gradle中引入加解密库依赖。
-```
+
+```groovy
 dependencies {
       ...
       // 这里要和上面选用的加解密算法库一致，用于运行时解密。
-      compile 'com.github.megatronking.stringfog:xor:4.0.0'
+      compile 'com.github.megatronking.stringfog:xor:5.0.0'
+}
+```
+
+##### 注意事项
+从AGP 8.0开始，默认不生成BuildConfig，但是StringFog依赖此配置，请注意加上下面的配置。
+```kotlin
+android {
+    // 注意请加上此配置
+    buildFeatures {
+        buildConfig = true
+    }
+    ...
 }
 ```
 
@@ -88,7 +129,7 @@ dependencies {
 
 #### 注解反加密
 如果开发者有不需要自动加密的类，可以使用注解StringFogIgnore来忽略：
-```
+```java
 @StringFogIgnore
 public class Test {
     ...
@@ -97,7 +138,7 @@ public class Test {
 #### 自定义加解密算法实现
 实现IStringFog接口，参考stringfog-ext目录下面的xor算法实现。
 注意某些算法在不同平台上会有差异，可能出现在运行时无法正确解密的问题。如何集成请参考下方范例！
-```
+```java
 public final class StringFogImpl implements IStringFog {
 
     @Override
@@ -125,6 +166,7 @@ public final class StringFogImpl implements IStringFog {
 实现IKeyGenerator接口，参考RandomKeyGenerator的实现。
 
 #### Mapping文件
+**注意⚠️：StringFog 5.x版本起有问题，已暂时停用此功能**
 加解密的字符串明文和暗文会自动生成mapping映射文件，位于outputs/mapping/stringfog.txt。
 
 ## 范例
@@ -132,6 +174,22 @@ public final class StringFogImpl implements IStringFog {
 - 自定义加解密算法集成，参考[sample2](https://github.com/MegatronKing/StringFog-Sample2)
 
 ## 更新日志
+
+### v5.2.0
+- 从ASM7升级到ASM9。
+- 修复多模块配置问题。
+
+### v5.1.0
+- 修复获取无法获取packageName的问题。
+- 修复无法指定KeyGenerator的问题。
+- 优化生成StringFog.java文件的任务逻辑。
+- 暂时移除Mapping文件生成逻辑，可能导致无法删除的问题。
+
+### v5.0.0
+- 支持Gradle 8.0。
+
+### v4.0.1
+- 修复Base64 API版本兼容问题。
 
 ### v4.0.0
 - 使用ASM7以支持Android 12。
@@ -192,7 +250,7 @@ public final class StringFogImpl implements IStringFog {
 
 --------
 
-    Copyright (C) 2022, Megatron King
+    Copyright (C) 2016-2023, Megatron King
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
